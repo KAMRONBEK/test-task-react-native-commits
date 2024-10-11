@@ -1,26 +1,26 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+export const COLORS = {
+  dark: '#000000',
+  black: '#18181B',
+  black2: '#262626',
+  black3: '#656565',
+  white: '#FFFFFF',
+  white2: '#CBC8C8',
+  darkwhite: '#C7C7C7',
+  orange: '#FF3D00',
+  gray: '#9DB2CE',
+  error: '#FB3F1C',
+};
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// hex's length should be 6 (#000000)
+export const addAlpha = (hex: string, alpha: number) =>
+  `${hex}${Math.floor(alpha * 255)
+    .toString(16)
+    .padStart(2, '0')}`;
 
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+export const hexToRgb = (hex: string): [number, number, number] => {
+  const bigint = parseInt(hex.slice(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return [r, g, b];
 };
