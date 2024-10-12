@@ -1,4 +1,5 @@
 import { Comment, CommentParamsType } from '@/@types';
+import { filter, last } from 'lodash';
 import { makeAutoObservable } from 'mobx';
 
 class CommentsStore {
@@ -23,13 +24,12 @@ class CommentsStore {
   };
 
   deleteComment = (id: number) => {
-    this.comments = this.comments.filter((comment) => comment.id !== id);
+    this.comments = filter(this.comments, (c) => c.id !== id);
   };
 
   get lastCommentId() {
-    return this.comments.length
-      ? this.comments[this.comments.length - 1].id
-      : 0;
+    const lastComment = last(this.comments);
+    return lastComment ? lastComment.id : 0;
   }
 
   clearAllComments = () => {

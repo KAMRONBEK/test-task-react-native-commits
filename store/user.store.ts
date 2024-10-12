@@ -1,5 +1,6 @@
 import { User } from '@/@types';
 import asyncStorageManager from '@/utils/async-storage';
+import { filter, find, map } from 'lodash';
 import { makeAutoObservable, runInAction } from 'mobx';
 
 class UserStore {
@@ -20,7 +21,7 @@ class UserStore {
   };
 
   deleteUser = (id: number) => {
-    this.users = this.users.filter((user) => user.id !== id);
+    this.users = filter(this.users, (u) => u.id !== id);
   };
 
   clearAllUsers = () => {
@@ -32,7 +33,7 @@ class UserStore {
     asyncStorageManager.setItem('currentUser', JSON.stringify(user));
   };
 
-  findUserById = (id: number) => this.users.find((user) => user.id === id);
+  findUserById = (id: number) => find(this.users, { id });
 
   clearCurrentUser = () => {
     this.currentUser = null;
@@ -53,7 +54,7 @@ class UserStore {
   };
 
   updateUser = (user: User) => {
-    this.users = this.users.map((u) => (u.id === user.id ? user : u));
+    this.users = map(this.users, (u) => (u.id === user.id ? user : u));
   };
 
   get isLogged() {
