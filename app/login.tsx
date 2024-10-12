@@ -1,4 +1,5 @@
 import { PoppinsFonts } from '@/assets/fonts/poppins.fonts';
+import BackButton from '@/components/BackButton';
 import { Button } from '@/components/Button';
 import Container from '@/components/Container';
 import { FormInput } from '@/components/FormController';
@@ -7,7 +8,7 @@ import { Spacing } from '@/components/Spacing';
 import { COLORS } from '@/constants/colors';
 import useUsers from '@/hooks/useUsers';
 import { CoreStyle } from '@/styles/global';
-import { emailSchema, usernameSchema } from '@/utils/schema';
+import { emailSchema } from '@/utils/schema';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { router } from 'expo-router';
 import { observer } from 'mobx-react-lite';
@@ -18,30 +19,28 @@ import * as yup from 'yup';
 
 const schema = yup.object({
   email: emailSchema,
-  username: usernameSchema,
 });
 
-function CreateUserScreen() {
+function LoginScreen() {
   const [shouldTriggerError, setShouldTriggerError] = useState(false);
-  const { createUserHandler, isLoadingOfCreateUser } = useUsers();
+  const { loginUserHandler, isLoadingOfLoginUser } = useUsers();
 
   const { control, handleSubmit, reset } = useForm({
     defaultValues: {
       email: '',
-      username: '',
     },
     mode: 'all',
     reValidateMode: 'onBlur',
     resolver: yupResolver(schema),
   });
 
-  const navigateToLoginHandler = useCallback(() => {
-    router.navigate('/login');
+  const navigateToBackHandler = useCallback(() => {
+    router.back();
   }, []);
 
   const onSubmitHandler = handleSubmit(
     async (formValues) => {
-      await createUserHandler(formValues, () => {
+      await loginUserHandler(formValues.email, () => {
         reset();
         setShouldTriggerError(false);
       });
@@ -55,14 +54,14 @@ function CreateUserScreen() {
     () => (
       <RN.View>
         <Button
-          title={'Create'}
+          title={'Login'}
           onPress={onSubmitHandler}
-          loading={isLoadingOfCreateUser}
+          loading={isLoadingOfLoginUser}
         />
         <Spacing />
       </RN.View>
     ),
-    [isLoadingOfCreateUser, onSubmitHandler],
+    [isLoadingOfLoginUser, onSubmitHandler],
   );
 
   return (
@@ -74,17 +73,12 @@ function CreateUserScreen() {
         style={styles.container}
         isScroll={true}
         Footer={renderFooter()}
+        Header={<BackButton />}
       >
-        <RN.Text style={styles.title}>{'Create user'}</RN.Text>
+        <RN.Text style={styles.title}>{'User Login'}</RN.Text>
 
         <Spacing steps={3} />
         <RN.View g={10}>
-          <FormInput
-            control={control}
-            name={'username'}
-            placeholder={'Enter your username'}
-            shouldTriggerError={shouldTriggerError}
-          />
           <FormInput
             control={control}
             name={'email'}
@@ -92,12 +86,11 @@ function CreateUserScreen() {
             shouldTriggerError={shouldTriggerError}
           />
         </RN.View>
-
         <Spacing />
-        <RN.TouchableOpacity onPress={navigateToLoginHandler}>
+        <RN.TouchableOpacity onPress={navigateToBackHandler}>
           <RN.Text style={styles.text}>
-            {'Already have an account? '}
-            <RN.Text style={styles.boldText}>{'Log in here'}</RN.Text>
+            {'No account yet? '}
+            <RN.Text style={styles.boldText}>{'Register now.'}</RN.Text>
           </RN.Text>
         </RN.TouchableOpacity>
       </Container>
@@ -125,4 +118,4 @@ const styles = RN.StyleSheet.create({
   },
 });
 
-export default observer(CreateUserScreen);
+export default observer(LoginScreen);

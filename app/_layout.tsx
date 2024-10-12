@@ -1,17 +1,58 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { getAllFonts } from '@/assets/fonts';
+import useUsers from '@/hooks/useUsers';
+import { userStore } from '@/store/user.store';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { SQLiteDatabase, SQLiteProvider } from 'expo-sqlite';
+import { observer } from 'mobx-react-lite';
+import { useCallback, useEffect } from 'react';
 import 'react-native-reanimated';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+async function initializeDB(db: SQLiteDatabase) {
+  try {
+    await db.execAsync(`
+      PRAGMA journal_mode=WAL;
+
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        parent_id INTEGER,  -- If this is a reply, points to the parent comment
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id),
+        FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+      );
+    `);
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const RootLayout = observer(() => {
   const [loaded, error] = useFonts({
     ...getAllFonts(),
   });
+  const { fetchUsersHandler } = useUsers();
+  const { isLogged, initCurrentUser, currentUser } = userStore;
+
+  console.log({ currentUser });
+
+  const navigateToMainScreen = useCallback(() => {
+    router.replace('/main');
+  }, []);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -24,6 +65,17 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    initCurrentUser();
+    fetchUsersHandler();
+  }, []);
+
+  useEffect(() => {
+    if (isLogged) {
+      navigateToMainScreen();
+    }
+  }, [isLogged]);
+
   return (
     <Stack
       screenOptions={{
@@ -31,7 +83,17 @@ export default function RootLayout() {
       }}
     >
       <Stack.Screen name={'index'} />
+      <Stack.Screen name={'login'} />
+      <Stack.Screen name={'main'} />
       <Stack.Screen name={'+not-found'} />
     </Stack>
+  );
+});
+
+export default function App() {
+  return (
+    <SQLiteProvider databaseName={'app.db'} onInit={initializeDB}>
+      <RootLayout />
+    </SQLiteProvider>
   );
 }
