@@ -1,20 +1,36 @@
-import React, { useState, useMemo } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Avatar, Card, Button } from 'react-native-paper';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
 import moment from 'moment';
-import { Comment } from '@/@types';
+import { Comment, CommentParamsType } from '@/@types';
 import { userStore } from '@/store/user.store';
 import { observer } from 'mobx-react-lite';
+import useComments from '@/hooks/useComments';
+import RN from '../RN';
+import { COLORS } from '@/constants/colors';
 
-const CommentItem: React.FC<Comment> = ({
+// Type for Comment with children (for nested replies)
+interface CommentProps extends Comment {
+  replies?: Comment[]; // Nested replies
+}
+
+const CommentItem: React.FC<CommentProps> = ({
   id,
   message,
   timestamp,
   userId,
   parent_id,
+  replies = [],
 }) => {
   const [replyMessage, setReplyMessage] = useState<string>('');
   const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyList, setReplyList] = useState<Comment[]>(replies);
+  const {
+    createReplayCommentHandler,
+    fetchAllReplayCommentsHandler,
+    isLoadingOfCreateReplayComment,
+    isLoadingOfFetchAllReplayComments,
+  } = useComments();
 
   // Fetch the user by their ID from the user store
   const user = useMemo(() => userStore.findUserById(userId), [userId]);
@@ -25,10 +41,53 @@ const CommentItem: React.FC<Comment> = ({
     [timestamp],
   );
 
+  const fetchAllReplayComments = useCallback(async () => {
+    await fetchAllReplayCommentsHandler(id, (replies) => {
+      setReplyList(replies);
+    });
+  }, [fetchAllReplayCommentsHandler, id]);
+
+  const handleReplySubmit = useCallback(async () => {
+    const replyComment: CommentParamsType = {
+      message: replyMessage,
+      parent_id: id,
+      // Add other required fields for the comment here, like userId
+      userId: userStore.currentUser?.id || 0, // Assuming you have the current user in userStore
+    };
+
+    await createReplayCommentHandler(replyComment, () => {
+      // Update the reply list after successful submission
+      setReplyList((prevReplies) => [
+        ...prevReplies,
+        {
+          ...replyComment,
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    });
+
+    // Reset reply input
+    setReplyTo(null);
+    setReplyMessage('');
+  }, [createReplayCommentHandler, id, replyMessage]);
+
+  useEffect(() => {
+    fetchAllReplayComments();
+  }, []);
+
+  if (isLoadingOfFetchAllReplayComments || !user) {
+    return (
+      <RN.View style={styles.loadingContainer}>
+        <RN.ActivityIndicator />
+      </RN.View>
+    );
+  }
+
   return (
     <Card style={styles.commentCard}>
       <Card.Content>
-        <View style={styles.commentHeader}>
+        <RN.View style={styles.commentHeader}>
           {/* Avatar */}
           {user ? (
             <Avatar.Text
@@ -41,16 +100,16 @@ const CommentItem: React.FC<Comment> = ({
           )}
 
           {/* Username and timestamp */}
-          <View style={styles.commentInfo}>
-            <Text style={styles.username}>
+          <RN.View style={styles.commentInfo}>
+            <RN.Text style={styles.username}>
               {user ? user.username : 'Unknown User'}
-            </Text>
-            <Text style={styles.timestamp}>{formattedDate}</Text>
-          </View>
-        </View>
+            </RN.Text>
+            <RN.Text style={styles.timestamp}>{formattedDate}</RN.Text>
+          </RN.View>
+        </RN.View>
 
         {/* Comment message */}
-        <Text style={styles.commentMessage}>{message}</Text>
+        <RN.Text style={styles.commentMessage}>{message}</RN.Text>
 
         {/* Reply button */}
         <Button mode={'text'} onPress={() => setReplyTo(id)}>
@@ -59,8 +118,8 @@ const CommentItem: React.FC<Comment> = ({
 
         {/* Reply input (only shown when replying) */}
         {replyTo === id && (
-          <View style={styles.replyInputContainer}>
-            <TextInput
+          <RN.View style={styles.replyInputContainer}>
+            <RN.TextInput
               placeholder={'Write a reply...'}
               value={replyMessage}
               onChangeText={setReplyMessage}
@@ -68,15 +127,21 @@ const CommentItem: React.FC<Comment> = ({
             />
             <Button
               mode={'contained'}
-              onPress={() => {
-                // Handle reply submission logic here
-                setReplyTo(null);
-                setReplyMessage('');
-              }}
+              onPress={handleReplySubmit}
+              disabled={isLoadingOfCreateReplayComment} // Disable while loading
             >
               {'Submit'}
             </Button>
-          </View>
+          </RN.View>
+        )}
+
+        {/* Render nested replies */}
+        {replyList && replyList.length > 0 && (
+          <RN.View style={styles.repliesContainer}>
+            {replyList.map((reply) => (
+              <CommentItem key={reply.id} {...reply} />
+            ))}
+          </RN.View>
         )}
       </Card.Content>
     </Card>
@@ -84,7 +149,7 @@ const CommentItem: React.FC<Comment> = ({
 };
 
 // Styles for the component
-const styles = StyleSheet.create({
+const styles = RN.StyleSheet.create({
   commentCard: {
     marginVertical: 8,
     padding: 16,
@@ -98,7 +163,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatar: {
-    backgroundColor: '#6200ea',
+    backgroundColor: COLORS.orange,
   },
   commentInfo: {
     marginLeft: 12,
@@ -126,6 +191,15 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 8,
     backgroundColor: '#f9f9f9',
+  },
+  repliesContainer: {
+    marginLeft: 20, // Indent replies
+    marginTop: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
 });
 
