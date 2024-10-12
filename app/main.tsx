@@ -5,10 +5,11 @@ import Container from '@/components/Container';
 import RN from '@/components/RN';
 import { Spacing } from '@/components/Spacing';
 import { COLORS } from '@/constants/colors';
+import { CoreStyle } from '@/styles/global';
 
 function MainScreen() {
   return (
-    <Container>
+    <Container mainStyle={CoreStyle.flex1}>
       <RN.Text style={styles.title}>{'Comments screen'}</RN.Text>
       <Spacing steps={3} />
       <CreateCommentInput />
