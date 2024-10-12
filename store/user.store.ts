@@ -32,6 +32,8 @@ class UserStore {
     asyncStorageManager.setItem('currentUser', JSON.stringify(user));
   };
 
+  findUserById = (id: number) => this.users.find((user) => user.id === id);
+
   clearCurrentUser = () => {
     this.currentUser = null;
     asyncStorageManager.removeItem('currentUser');

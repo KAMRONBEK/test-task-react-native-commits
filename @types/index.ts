@@ -13,3 +13,7 @@ export interface Comment {
 }
 
 export type UserParamsType = Pick<User, 'email' | 'username'>;
+export type CommentParamsType = Pick<
+  Comment,
+  'userId' | 'message' | 'parent_id'
+>;

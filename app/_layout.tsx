@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { getAllFonts } from '@/assets/fonts';
+import useComments from '@/hooks/useComments';
 import useUsers from '@/hooks/useUsers';
 import { userStore } from '@/store/user.store';
 import { useFonts } from 'expo-font';
@@ -29,7 +30,7 @@ async function initializeDB(db: SQLiteDatabase) {
         userId INTEGER NOT NULL,
         message TEXT NOT NULL,
         parent_id INTEGER,  -- If this is a reply, points to the parent comment
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timestamp DATETIME DEFAULT (datetime('now', 'localtime')),  -- Storing local time instead of UTC
         FOREIGN KEY (userId) REFERENCES users(id),
         FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
       );
@@ -37,7 +38,7 @@ async function initializeDB(db: SQLiteDatabase) {
 
     console.log('Database initialized successfully');
   } catch (error) {
-    console.error(error);
+    console.error('Error initializing database:', error);
   }
 }
 
@@ -46,9 +47,8 @@ const RootLayout = observer(() => {
     ...getAllFonts(),
   });
   const { fetchUsersHandler } = useUsers();
-  const { isLogged, initCurrentUser, currentUser } = userStore;
-
-  console.log({ currentUser });
+  const { fetchAllCommentsHandler } = useComments();
+  const { isLogged, initCurrentUser } = userStore;
 
   const navigateToMainScreen = useCallback(() => {
     router.replace('/main');
@@ -68,6 +68,7 @@ const RootLayout = observer(() => {
   useEffect(() => {
     initCurrentUser();
     fetchUsersHandler();
+    fetchAllCommentsHandler();
   }, []);
 
   useEffect(() => {

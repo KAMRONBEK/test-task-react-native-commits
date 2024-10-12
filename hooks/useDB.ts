@@ -1,4 +1,4 @@
-import { User, UserParamsType } from '@/@types';
+import { CommentParamsType, User, UserParamsType } from '@/@types';
 import { useSQLiteContext } from 'expo-sqlite';
 import { delay } from 'lodash';
 
@@ -75,7 +75,69 @@ const useDB = () => {
       }),
   };
 
-  return { ...userActions };
+  const commentActions = {
+    fetchComments: (parentId?: number) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          const query = parentId
+            ? `SELECT * FROM comments WHERE parent_id = ${parentId}`
+            : 'SELECT * FROM comments WHERE parent_id IS NULL';
+          const comments = await db.getAllAsync<CommentParamsType>(query);
+          delay(() => resolve(comments), DELAYED_TIME);
+        } catch (error) {
+          console.log(error);
+          reject(error);
+        }
+      }),
+
+    createComment: (comment: CommentParamsType) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await db.execAsync(
+            `INSERT INTO comments (userId, message, parent_id) VALUES (${comment.userId}, '${comment.message}', ${comment.parent_id || null})`,
+          );
+          delay(() => resolve(true), DELAYED_TIME);
+        } catch (error) {
+          reject(error);
+        }
+      }),
+
+    createReply: (reply: CommentParamsType) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await db.execAsync(
+            `INSERT INTO comments (userId, message, parent_id) VALUES (${reply.userId}, '${reply.message}', ${reply.parent_id})`,
+          );
+          delay(() => resolve(true), DELAYED_TIME);
+        } catch (error) {
+          reject(error);
+        }
+      }),
+
+    updateComment: (id: number, comment: CommentParamsType) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await db.execAsync(
+            `UPDATE comments SET message = '${comment.message}' WHERE id = ${id}`,
+          );
+          delay(() => resolve(true), DELAYED_TIME);
+        } catch (error) {
+          reject(error);
+        }
+      }),
+
+    deleteComment: (id: number) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await db.execAsync(`DELETE FROM comments WHERE id = ${id}`);
+          delay(() => resolve(true), DELAYED_TIME);
+        } catch (error) {
+          reject(error);
+        }
+      }),
+  };
+
+  return { ...userActions, ...commentActions };
 };
 
 export default useDB;
