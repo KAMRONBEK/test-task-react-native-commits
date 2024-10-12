@@ -57,6 +57,10 @@ class UserStore {
     this.users = map(this.users, (u) => (u.id === user.id ? user : u));
   };
 
+  logout = () => {
+    this.clearCurrentUser();
+  };
+
   get isLogged() {
     return !!this.currentUser;
   }

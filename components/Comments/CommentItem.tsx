@@ -8,10 +8,10 @@ import { observer } from 'mobx-react-lite';
 import useComments from '@/hooks/useComments';
 import RN from '../RN';
 import { COLORS } from '@/constants/colors';
+import { ScrollView } from 'react-native';
 
-// Type for Comment with children (for nested replies)
 interface CommentProps extends Comment {
-  replies?: Comment[]; // Nested replies
+  replies?: Comment[];
 }
 
 const CommentItem: React.FC<CommentProps> = ({
@@ -32,10 +32,7 @@ const CommentItem: React.FC<CommentProps> = ({
     isLoadingOfFetchAllReplayComments,
   } = useComments();
 
-  // Fetch the user by their ID from the user store
   const user = useMemo(() => userStore.findUserById(userId), [userId]);
-
-  // Format the timestamp into a readable date
   const formattedDate = useMemo(
     () => moment.utc(timestamp).local().fromNow(),
     [timestamp],
@@ -51,12 +48,10 @@ const CommentItem: React.FC<CommentProps> = ({
     const replyComment: CommentParamsType = {
       message: replyMessage,
       parent_id: id,
-      // Add other required fields for the comment here, like userId
-      userId: userStore.currentUser?.id || 0, // Assuming you have the current user in userStore
+      userId: userStore.currentUser?.id || 0,
     };
 
     await createReplayCommentHandler(replyComment, () => {
-      // Update the reply list after successful submission
       setReplyList((prevReplies) => [
         ...prevReplies,
         {
@@ -67,7 +62,6 @@ const CommentItem: React.FC<CommentProps> = ({
       ]);
     });
 
-    // Reset reply input
     setReplyTo(null);
     setReplyMessage('');
   }, [createReplayCommentHandler, id, replyMessage]);
@@ -88,7 +82,6 @@ const CommentItem: React.FC<CommentProps> = ({
     <Card style={styles.commentCard}>
       <Card.Content>
         <RN.View style={styles.commentHeader}>
-          {/* Avatar */}
           {user ? (
             <Avatar.Text
               size={40}
@@ -99,7 +92,6 @@ const CommentItem: React.FC<CommentProps> = ({
             <Avatar.Icon size={40} icon={'account'} style={styles.avatar} />
           )}
 
-          {/* Username and timestamp */}
           <RN.View style={styles.commentInfo}>
             <RN.Text style={styles.username}>
               {user ? user.username : 'Unknown User'}
@@ -108,15 +100,12 @@ const CommentItem: React.FC<CommentProps> = ({
           </RN.View>
         </RN.View>
 
-        {/* Comment message */}
         <RN.Text style={styles.commentMessage}>{message}</RN.Text>
 
-        {/* Reply button */}
         <Button mode={'text'} onPress={() => setReplyTo(id)}>
           {'Reply'}
         </Button>
 
-        {/* Reply input (only shown when replying) */}
         {replyTo === id && (
           <RN.View style={styles.replyInputContainer}>
             <RN.TextInput
@@ -128,20 +117,20 @@ const CommentItem: React.FC<CommentProps> = ({
             <Button
               mode={'contained'}
               onPress={handleReplySubmit}
-              disabled={isLoadingOfCreateReplayComment} // Disable while loading
+              disabled={isLoadingOfCreateReplayComment}
             >
               {'Submit'}
             </Button>
           </RN.View>
         )}
 
-        {/* Render nested replies */}
+        {/* Render nested replies with ScrollView */}
         {replyList && replyList.length > 0 && (
-          <RN.View style={styles.repliesContainer}>
+          <ScrollView style={styles.repliesContainer}>
             {replyList.map((reply) => (
               <CommentItem key={reply.id} {...reply} />
             ))}
-          </RN.View>
+          </ScrollView>
         )}
       </Card.Content>
     </Card>
@@ -154,6 +143,8 @@ const styles = RN.StyleSheet.create({
     marginVertical: 8,
     padding: 16,
     borderRadius: 8,
+    borderColor: '#ccc', // Border color
+    borderWidth: 1, // Border width
     backgroundColor: '#fff',
     elevation: 2,
   },
@@ -194,7 +185,7 @@ const styles = RN.StyleSheet.create({
   },
   repliesContainer: {
     marginLeft: 20, // Indent replies
-    marginTop: 10,
+    maxHeight: 200, // Limit height for scrolling
   },
   loadingContainer: {
     alignItems: 'center',
